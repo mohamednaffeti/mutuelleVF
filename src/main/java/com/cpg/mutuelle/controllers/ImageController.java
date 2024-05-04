@@ -47,4 +47,33 @@ public class ImageController {
                         file.getOriginalFilename()));
     }
 
+    @PutMapping(value = "/update/imageActualite/{idActualite}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImageUploadResponse> updateImageActualite(@RequestParam("image") MultipartFile file,
+                                                                    @PathVariable Long idActualite)
+            throws IOException {
+        Optional<Actualite> optionalActualite = actualiteRepository.findById(idActualite);
+        if (optionalActualite.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ImageUploadResponse("Actualite not found"));
+        }
+
+        Actualite actualite = optionalActualite.get();
+
+        Optional<Image> optionalImage = imageRepository.findByActualite(actualite);
+        if (optionalImage.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ImageUploadResponse("Image not found for the provided actualite"));
+        }
+
+        Image image = optionalImage.get();
+        image.setName(file.getOriginalFilename());
+        image.setType(file.getContentType());
+        image.setImage(ImageUtility.compressImage(file.getBytes()));
+
+        imageRepository.save(image);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ImageUploadResponse("Image updated successfully: " +
+                        file.getOriginalFilename()));
+    }
 }
